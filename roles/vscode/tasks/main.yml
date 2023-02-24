@@ -1,0 +1,45 @@
+---
+
+#
+# Install vscode from RPM.
+#
+- block:
+
+  - name:
+    yum_repository:
+      name: visual-studio
+      description: Visual Studio Code
+      baseurl: "https://packages.microsoft.com/yumrepos/vscode"
+      gpgcheck: yes
+      gpgkey: "https://packages.microsoft.com/keys/microsoft.asc"
+      enabled: no
+
+  - dnf:
+      enablerepo: "visual-studio"
+      state: latest
+      name:
+      - code
+
+  - name: Increase inotify.max_user_watches
+    sysctl:
+      name: "fs.inotify.max_user_watches"
+      value: "500000"
+      state: present
+      reload: yes
+
+  become: yes
+  become_user: root
+
+#
+# Install user specific extensions
+# if defined.
+#
+- include_tasks:
+    file:
+      "{{playbook_dir}}/tasks/install_vscode_extension.yml"
+    apply:
+      vars:
+        VSCODE_EXTENSION: "{{vsce_item}}"
+  loop_control:
+    loop_var: vsce_item
+  loop: "{{ user_vars.vscode_extensions | default([]) }}"

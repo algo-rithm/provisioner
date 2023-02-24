@@ -1,0 +1,42 @@
+#
+# Install but disable rpmfusion repos.
+#
+
+- name: Find rpmfusion repo files
+  find:
+    paths: /etc/yum.repos.d
+    patterns: 'rpmfusion*.repo'
+  become: yes
+  become_user: root
+  register: rpmfusion_find_result
+
+- name: rpmfusion
+  dnf:
+    state: latest
+    disable_gpg_check: yes
+    name:
+    - "https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm"
+    - "https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm"
+  become: yes
+  become_user: root
+  when: rpmfusion_find_result.matched == 0
+
+- name: Find rpmfusion repo files
+  find:
+    paths: /etc/yum.repos.d
+    patterns: 'rpmfusion*.repo'
+  become: yes
+  become_user: root
+  register: rpmfusion_find_result
+
+- name: Disable rpmfusion repos
+  lineinfile:
+    path: "{{item.path}}"
+    regexp: 'enabled.*1'
+    line: enabled=0
+  loop_control:
+    label: "{{item.path}}"
+  loop: "{{rpmfusion_find_result.files}}"
+  become: yes
+  become_user: root
+

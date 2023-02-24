@@ -1,0 +1,180 @@
+---
+
+- hosts: controller
+  gather_facts: yes
+
+  pre_tasks:
+
+  - fail:
+      msg: "Unsopported platform {{ansible_distribution}} {{ansible_distribution_version}}"
+    when: (ansible_distribution != "Rocky") or (ansible_distribution_major_version != "9")
+
+  - set_fact:
+      unpriv_user_id: "{{ansible_user_id}}"
+      unpriv_user_dir: "{{ansible_user_dir}}"
+      unpriv_user_gecos: "{{ansible_user_gecos}}"
+    become: no
+
+  - set_fact:
+      user_vars_dir: user_roles/{{unpriv_user_id}}/vars
+
+  - stat:
+      path: "{{user_vars_dir}}"
+    register: user_vars_dir_stat
+
+  - name: Include user specific vars
+    include_vars:
+      name: user_vars
+      dir: "{{user_vars_dir}}"
+    when: user_vars_dir_stat.stat.exists
+
+  - debug:
+      msg:
+      - "github_username: {{user_vars.github_username}}"
+
+  - name: Configure EPEL repo.
+    package:
+      state: latest
+      name: epel-release
+    become: yes
+    become_user: root
+
+  - include_tasks:
+      file: tasks/install_rpmfusion_repos.yml
+
+
+  - name: Configure system flathub repo
+    community.general.flatpak_remote:
+      name: flathub
+      state: present
+      flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+      method: system
+    become: yes
+    become_user: root
+
+  - name: Configure user flathub repo
+    community.general.flatpak_remote:
+      name: flathub
+      state: present
+      flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+      method: user
+    become: yes
+    become_user: "{{unpriv_user_id}}"
+
+  - name: Update packages
+    package:
+      state: latest
+      name: "*"
+    become: yes
+    become_user: root
+
+  - name: Update flatpaks
+    command:
+      cmd: flatpak update --noninteractive
+    register: flatpak_update_result
+    changed_when: flatpak_update_result is not search('Nothing to do')
+
+  - name: Curated set of favorite packages
+    package:
+      state: latest
+      name:
+      - firefox
+      - chromium
+      - gnome-tweaks
+      - gnome-extensions-app
+      - nautilus-extensions
+      - dconf-editor
+      - hplip
+      - p7zip
+    become: yes
+    become_user: root
+
+  - dnf:
+      state: absent
+      name:
+      - PackageKit-command-not-found
+    become: yes
+    become_user: root
+
+  - name: Disable IPv6
+    sysctl:
+      name: "{{item.key}}"
+      value: "{{item.value}}"
+      state: present
+      reload: yes
+    loop:
+    - {key: 'net.ipv6.conf.all.disable_ipv6', value: '1'}
+    - {key: 'net.ipv6.conf.default.disable_ipv6', value: '1'}
+    - {key: 'net.ipv6.conf.lo.disable_ipv6', value: '1'}
+    become: yes
+    become_user: root
+
+  - name: Use the iptables backend for firewalld.
+    ansible.builtin.lineinfile:
+      path: /etc/firewalld/firewalld.conf
+      regexp: '^FirewallBackend='
+      line: FirewallBackend=iptables
+    become: yes
+    become_user: root
+
+  - name: Enable SELinux
+    selinux:
+      policy: targeted
+      state: enforcing
+    become: yes
+    become_user: root
+
+  - dnf:
+      state: latest
+      name:
+      - virt-what
+    become: yes
+    become_user: root
+
+  - command:
+      cmd: virt-what
+    register: virt_what_result
+    changed_when: false
+    become: yes
+
+  - set_fact:
+      host_is_virtual: "{{virt_what_result.stdout | length > 0}}"
+
+  - debug:
+      msg: "host_is_virtual: {{host_is_virtual}}"
+
+  - name: Wayland is still problematic
+    ini_file:
+      path: /etc/gdm/custom.conf
+      section: "daemon"
+      option: "WaylandEnable"
+      value: "False"
+      backup: no
+    become: yes
+    become_user: root
+
+  roles:
+  - direnv
+  - java
+  - golang
+  - groovy
+  # - gradle-wrapper-wrapper
+  - vscode
+  - podman-desktop
+  - k8s-kubectl
+  - k8s-k9s
+  - k8s-helm
+  - k3d
+
+  post_tasks:
+
+  - set_fact:
+      user_task: user_roles/{{unpriv_user_id}}/main.yml
+
+  - stat:
+      path: "{{user_task}}"
+    register:  user_task_stat
+
+  - include_tasks:
+      file: "{{user_task}}"
+    when: user_task_stat.stat.exists

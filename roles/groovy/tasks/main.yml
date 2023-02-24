@@ -1,0 +1,41 @@
+---
+
+- block:
+
+  - package:
+      state: present
+      name:
+      - unzip
+  
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "/usr/local/bin"
+    - "/usr/local/lib"
+  
+  - name: Install groovy
+    unarchive:
+      remote_src: yes
+      src: "https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-{{groovy_version}}.zip"
+      dest: "/usr/local/lib"
+      creates: "/usr/local/lib/groovy-{{groovy_version}}"
+  
+  - name: Add groovy to system path
+    file:
+      path: "/usr/local/bin/groovy"
+      src: "/usr/local/lib/groovy-{{groovy_version}}/bin/groovy"
+      state: link
+      force: yes
+
+  become: yes
+
+- lineinfile:
+    path: "{{unpriv_user_dir}}/.bashrc"
+    line: "export GROOVY_TURN_OFF_JAVA_WARNINGS='true'"
+    insertbefore: "User specific aliases"
+    create: yes
+    state: present
+  become: yes
+  become_user: "{{unpriv_user_id}}"

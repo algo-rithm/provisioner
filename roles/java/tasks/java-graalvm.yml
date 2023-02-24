@@ -1,0 +1,52 @@
+---
+
+- shell:
+    cmd: gu --version
+  changed_when: false
+  failed_when: false
+  register: check_graalvm_version
+
+- set_fact:
+    graalvm_version_expression: "GraalVM Updater {{graalvm_version}}"
+    graalvm_release_url: "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-{{graalvm_version}}/graalvm-ce-java{{java_version}}-linux-amd64-{{graalvm_version}}.tar.gz"
+    graalvm_install_dir: "/usr/local/lib"
+
+- set_fact:
+    any_graalvm_installed: "{{not check_graalvm_version.stderr is regex('gu: command not found')}}"
+    correct_graalvm_installed: "{{check_graalvm_version.stdout is regex(graalvm_version_expression)}}"
+
+- debug:
+    msg:
+    - "any_graalvm_installed: {{any_graalvm_installed}}"
+    - "correct_graalvm_installed: {{correct_graalvm_installed}}"
+
+- block:
+
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{graalvm_install_dir}}"
+    - "/usr/local/bin"
+
+  - name: Download GraalVM
+    unarchive:
+      remote_src: yes
+      src: "{{graalvm_release_url}}"
+      dest: "{{graalvm_install_dir}}"
+
+  - name: Define system wide java environment.
+    template:
+      src: "{{role_path}}/templates/java-graalvm.sh"
+      dest: /etc/profile.d/java.sh
+      owner: root
+      group: root
+      mode: "a=r"
+
+  - shell:
+      cmd: "{{graalvm_install_dir}}/graalvm-ce-java{{java_version}}-{{graalvm_version}}/bin/gu install native-image"
+
+  become: yes
+  become_user: root
+  when: (not any_graalvm_installed) or (not correct_graalvm_installed)

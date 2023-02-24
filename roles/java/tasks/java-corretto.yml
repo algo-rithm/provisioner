@@ -1,0 +1,37 @@
+---
+
+- name: Corretto repo key
+  rpm_key:
+    state: present
+    key: "https://yum.corretto.aws/corretto.key"
+  become: yes
+  become_user: root
+
+- name: Corretto repository
+  yum_repository:
+    name: "AmazonCorretto"
+    description: "Amazon Corretto"
+    baseurl: "https://yum.corretto.aws/$basearch"
+    enabled: yes
+    gpgcheck: yes
+  become: yes
+  become_user: root
+
+- name: Install Java
+  package:
+    name: "{{item}}"
+    state: latest
+  become: yes
+  become_user: root
+  loop:
+  - "java-{{java_version}}-amazon-corretto-devel"
+
+- name: Define system wide java environment.
+  template:
+    src: "{{role_path}}/templates/java-corretto.sh"
+    dest: /etc/profile.d/java.sh
+    owner: root
+    group: root
+    mode: "a=r"
+  become: yes
+  become_user: root

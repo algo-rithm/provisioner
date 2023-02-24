@@ -1,0 +1,12 @@
+plugin:
+  get-all:
+    shortCut: g
+    confirm: false
+    description: get all
+    scopes:
+    - all
+    command: sh
+    background: false
+    args:
+    - -c
+    - "kubectl -n $NAMESPACE get all -o wide | less"

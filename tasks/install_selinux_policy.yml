@@ -1,0 +1,42 @@
+- block:
+
+  - debug:
+      msg: "Install selinux type extension from file {{SELINUX_TYPE_EXTENSION_FILE}}"
+
+  - package:
+      state: present
+      name:
+      - selinux-policy-devel
+      - policycoreutils-devel
+  
+  - name: selinux policy tmp build dir
+    tempfile:
+      state: directory
+    register: selinux_policy_build_dir
+  
+  - name: Copy type extension file to target machine.
+    copy:
+      src: "{{SELINUX_TYPE_EXTENSION_FILE}}"
+      dest: "{{selinux_policy_build_dir.path}}"
+      owner: root
+      group: root
+      mode: 'u=r,go='
+
+  - name: Build selinux policy file
+    command:
+      chdir: "{{selinux_policy_build_dir.path}}"
+      cmd: /usr/bin/make -f /usr/share/selinux/devel/Makefile {{SELINUX_TYPE_EXTENSION_FILE | basename | splitext | first}}.pp
+
+  - name: Install selinux policy
+    command:
+      chdir: "{{selinux_policy_build_dir.path}}"
+      cmd: /usr/sbin/semodule -i {{SELINUX_TYPE_EXTENSION_FILE | basename | splitext | first}}.pp
+
+  - name: Remove policy tmp build dir
+    file:
+      state: absent
+      path: "{{selinux_policy_build_dir.path}}"
+
+  become: yes
+  become_user: root
+

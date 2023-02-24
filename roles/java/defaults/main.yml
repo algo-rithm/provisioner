@@ -1,0 +1,7 @@
+---
+
+#Pick major
+java_version: 17
+
+# if GraalVM is chosen instead of Corretto
+graalvm_version: 22.3.1

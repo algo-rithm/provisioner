@@ -1,0 +1,8 @@
+---
+
+- name: Podman Desktop
+  flatpak:
+    method: user
+    name: io.podman_desktop.PodmanDesktop
+  become: yes
+  become_user: "{{unpriv_user_id}}"

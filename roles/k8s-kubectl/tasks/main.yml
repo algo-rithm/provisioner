@@ -1,0 +1,48 @@
+---
+
+- shell:
+    cmd: kubectl version --client=True
+  changed_when: false
+  failed_when: false
+  register: check_k8s_kubectl_version
+  
+- set_fact:
+    k8s_kubectl_version_expression: "GitVersion:\"v{{k8s_kubectl_version}}\""
+    kubectl_release_url: "https://dl.k8s.io/release/v{{k8s_kubectl_version}}/bin/linux/amd64/kubectl"
+    kubectl_install_dir: "/usr/local/lib/kubectl-{{k8s_kubectl_version}}"
+
+- set_fact:
+    any_kubectl_installed: "{{not check_k8s_kubectl_version.stderr is regex('kubectl: command not found')}}"
+    correct_kubectl_installed: "{{check_k8s_kubectl_version.stdout is regex(k8s_kubectl_version_expression)}}"
+  
+- block:
+
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{kubectl_install_dir}}"
+    - "/usr/local/bin"
+    
+  - name: Download kubectl
+    get_url:
+      url: "{{kubectl_release_url}}"
+      dest: "{{kubectl_install_dir}}/kubectl"
+      
+  - name: kubectl permissions
+    file:
+      path: "{{kubectl_install_dir}}/kubectl"
+      state: file
+      mode: "a+rx"
+      
+  - name: kubectl system path
+    file:
+      path: '/usr/local/bin/kubectl'
+      src: "{{kubectl_install_dir}}/kubectl"
+      state: link
+      force: yes
+      
+  when: (not any_kubectl_installed) or (not correct_kubectl_installed)
+  become: yes
+  become_user: root

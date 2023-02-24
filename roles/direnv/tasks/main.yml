@@ -1,0 +1,59 @@
+---
+
+- shell:
+    cmd: direnv version
+  changed_when: false
+  failed_when: false
+  register: check_direnv_version
+
+- set_fact:
+    direnv_version_expression: "{{direnv_version}}"
+    direnv_release_url: "https://github.com/direnv/direnv/releases/download/v{{direnv_version}}/direnv.linux-amd64"
+    direnv_install_dir: "/usr/local/lib/direnv-{{direnv_version}}"
+
+- set_fact:
+    any_direnv_installed: "{{not check_direnv_version.stderr is regex('direnv: command not found')}}"
+    correct_direnv_installed: "{{check_direnv_version.stdout is regex(direnv_version_expression)}}"
+
+- block:
+
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{direnv_install_dir}}"
+    - "/usr/local/bin"
+
+  - name: Download direnv
+    get_url:
+      url: "{{direnv_release_url}}"
+      dest: "{{direnv_install_dir}}/direnv"
+
+  - name: direnv permissions
+    file:
+      path: "{{direnv_install_dir}}/direnv"
+      state: file
+      mode: "a+rx"
+
+  - name: Add direnv to system path
+    file:
+      path: "/usr/local/bin/direnv"
+      src: "{{direnv_install_dir}}/direnv"
+      state: link
+      force: yes
+
+  when: (not any_direnv_installed) or (not correct_direnv_installed)
+  become: yes
+  become_user: root
+
+- name: direnv bash hook
+  lineinfile:
+    path: "{{unpriv_user_dir}}/.bashrc"
+    regexp: "eval.*direnv.*hook"
+    line: 'eval "$(direnv hook bash)"'
+    insertafter: EOF
+    create: yes
+    state: present
+  become: yes
+  become_user: "{{unpriv_user_id}}"

@@ -1,0 +1,11 @@
+- set_fact:
+    java_preferred_distribution: "{{user_vars.java_preferred_distribution | default('corretto')}}"
+
+- include_tasks:
+    file: java-corretto.yml
+  when: java_preferred_distribution == "corretto"
+
+- include_tasks:
+    file: java-graalvm.yml
+  when: java_preferred_distribution == "graalvm"
+

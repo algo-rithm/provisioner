@@ -1,0 +1,46 @@
+#
+# Gradle Wrapper wrapper.
+#
+
+- stat:
+    path: /usr/local/bin/gr
+  register:  gr_stat
+
+- block:
+
+  - name: Working dir to build gr.
+    tempfile:
+      state: directory
+    register: gr_working_dir
+
+  # - name: git gr
+    # git:
+    #   repo: "{{morpheus.gitlab_url}}/algo-rithm/provisioner.git"
+    #   dest: "{{gr_working_dir.path}}"
+
+  - command:
+      chdir: "{{gr_working_dir.path}}"
+      cmd: "go build -o gr"
+
+  when: not gr_stat.stat.exists
+
+- block:
+
+  - copy:
+      remote_src: yes
+      src: "{{gr_working_dir.path}}/gr"
+      dest: /usr/local/bin
+      owner: root
+      group: root
+      mode: "u=rwx,go=rx"
+
+  - name: Link grr to gr for bootRun support
+    file:
+      path: "/usr/local/bin/grr"
+      src: "/usr/local/bin/gr"
+      state: link
+      force: yes
+
+  when: not gr_stat.stat.exists
+  become: yes
+  become_user: root

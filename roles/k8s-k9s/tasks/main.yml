@@ -1,0 +1,67 @@
+---
+
+- shell:
+    cmd: k9s version
+  changed_when: false
+  failed_when: false
+  register: check_k9s_version
+
+- set_fact:
+    k9s_version_expression: "Version:.*v{{k9s_version}}"
+    k9s_release_url: "https://github.com/derailed/k9s/releases/download/v{{k9s_version}}/k9s_Linux_amd64.tar.gz"
+    k9s_install_dir: "/usr/local/lib/k9s-{{k9s_version}}"
+
+- set_fact:
+    any_k9s_installed: "{{not check_k9s_version.stderr is regex('k9s: command not found')}}"
+    correct_k9s_installed: "{{check_k9s_version.stdout is regex(k9s_version_expression)}}"
+
+- block:
+
+  - package:
+      state: present
+      name:
+      - tar
+      - gzip
+  
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{k9s_install_dir}}"
+    - "/usr/local/bin"
+
+  - name: Download k9s
+    unarchive:
+      remote_src: yes
+      src: "{{k9s_release_url}}"
+      dest: "{{k9s_install_dir}}"
+
+  - name: Add k9s to system path
+    file:
+      path: "/usr/local/bin/k9s"
+      src: "/usr/local/lib/k9s-{{k9s_version}}/k9s"
+      state: link
+      force: yes
+
+  when: (not any_k9s_installed) or (not correct_k9s_installed)
+  become: yes
+
+- block:
+
+  - name: k9s user plugin dir
+    file:
+      state: directory
+      path: "{{unpriv_user_dir}}/.config/k9s"
+      mode: "u=rwx,go="
+
+  - name: k9s plugins
+    copy:
+      src: "plugin.yml"
+      dest: "{{unpriv_user_dir}}/.config/k9s"
+      owner: "{{unpriv_user_id}}"
+      group: "{{unpriv_user_id}}"
+      mode: "u=r,go="
+   
+  become: yes
+  become_user: "{{unpriv_user_id}}"

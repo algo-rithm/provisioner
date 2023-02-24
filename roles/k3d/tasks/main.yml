@@ -1,0 +1,68 @@
+---
+
+- shell:
+    cmd: k3d version | head -n 1
+  changed_when: false
+  failed_when: false
+  register: check_k3d_version
+
+- set_fact:
+    k3d_version_expression: "k3d version v{{k3d_version}}"
+    k3d_release_url: "https://github.com/k3d-io/k3d/releases/download/v{{k3d_version}}/k3d-linux-amd64"
+    k3d_install_dir: "/usr/bin"
+
+- set_fact:
+    any_k3d_installed: "{{not check_k3d_version.stderr is regex('k3d: command not found')}}"
+    correct_k3d_installed: "{{check_k3d_version.stdout is regex(k3d_version_expression)}}"
+
+- debug:
+    msg:
+    - "any k3d installed: {{any_k3d_installed}}"
+    - "correct k3d installed: {{correct_k3d_installed}}"
+    - "url: {{k3d_release_url}}"
+
+- block:
+
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{k3d_install_dir}}"
+
+  - name: Download k3d
+    get_url:
+      url: "{{k3d_release_url}}"
+      dest: "{{k3d_install_dir}}/k3d"
+      owner: root
+      group: root
+      mode: "a+rx"
+
+  - include_tasks:
+      file:
+        "{{playbook_dir}}/tasks/install_selinux_policy.yml"
+      apply:
+        vars:
+          SELINUX_TYPE_EXTENSION_FILE: "{{selinux_policy_file_item}}"
+    loop_control:
+      loop_var: selinux_policy_file_item
+    with_fileglob:
+    - "files/*.te"
+
+  when: (not any_k3d_installed) or (not correct_k3d_installed)
+  become: yes
+  become_user: root
+
+- name: Allow admin convenient access to k3d
+  lineinfile:
+    path: /etc/sudoers.d/k3d
+    regexp: "{{unpriv_user_id}}.*k3d"
+    line: "{{unpriv_user_id}} ALL=(ALL) NOPASSWD: /usr/bin/k3d"
+    state: present
+    create: yes
+    owner: root
+    group: root
+    mode: "u=rw,g=r,o-rwx"
+  become: yes
+  when: not (unpriv_user_id == 'root')
+  

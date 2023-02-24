@@ -1,0 +1,36 @@
+
+---
+
+- name: Go Language Tools
+  package:
+    name:
+    - golang
+  become: yes
+  become_user: root
+
+# - name: Support Some org private repo
+#   command:
+#     cmd: go env -w GOPRIVATE='{{org.gitlab_host}}/*'
+#   changed_when: false
+#   become: yes
+#   become_user: "{{unpriv_user_id}}"
+
+# Tools written in the "go" language, such as Terraform,
+# will only honor and load from "~/.aws/config" if the environment variable
+# AWS_SDK_LOAD_CONFIG is defined.
+#
+#   https://docs.aws.amazon.com/sdk-for-go/api/aws/session/
+#
+# Defining this environment variable here may have
+# side-effects (probably positive) on other AWS related tools
+# which are also written in go and share the same underlying
+# library.
+#
+# - lineinfile:
+#     path: "{{unpriv_user_dir}}/.bashrc"
+#     line: export AWS_SDK_LOAD_CONFIG='yes'
+#     insertbefore: "User specific aliases"
+#     create: yes
+#     state: present
+#   become: yes
+#   become_user: "{{unpriv_user_id}}"

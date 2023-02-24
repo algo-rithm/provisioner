@@ -1,0 +1,12 @@
+
+module k3d-container-file 1.0;
+
+require {
+	type container_file_t;
+	type iptables_t;
+	class dir ioctl;
+}
+
+#============= iptables_t ==============
+allow iptables_t container_file_t:dir ioctl;
+

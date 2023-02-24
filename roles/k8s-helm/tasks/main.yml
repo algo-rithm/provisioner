@@ -1,0 +1,60 @@
+---
+
+- shell:
+    cmd: helm version
+  changed_when: false
+  failed_when: false
+  register: check_k8s_helm_version
+
+- set_fact:
+    k8s_helm_version_expression: "Version:\"v{{k8s_helm_version}}\""
+    helm_release_url: "https://get.helm.sh/helm-v{{k8s_helm_version}}-linux-amd64.tar.gz"
+    helm_install_dir: "/usr/local/lib/helm-{{k8s_helm_version}}"
+
+- set_fact:
+    any_helm_installed: "{{not check_k8s_helm_version.stderr is regex('helm: command not found')}}"
+    correct_helm_installed: "{{check_k8s_helm_version.stdout is regex(k8s_helm_version_expression)}}"
+
+- block:
+
+  - package:
+      state: present
+      name:
+      - tar
+      - gzip
+  
+  - file:
+      path: "{{item}}"
+      state: directory
+      mode: "a+rx"
+    loop:
+    - "{{helm_install_dir}}"
+    - "/usr/local/bin"
+
+  - name: Download helm
+    unarchive:
+      remote_src: yes
+      src: "{{helm_release_url}}"
+      dest: "{{helm_install_dir}}"
+
+  - name: Add helm to system path
+    file:
+      path: "/usr/local/bin/helm"
+      src: "/usr/local/lib/helm-{{k8s_helm_version}}/linux-amd64/helm"
+      state: link
+      force: yes
+
+  - name: Update helm bash completions
+    shell:
+      cmd: "/usr/local/bin/helm completion bash > /etc/bash_completion.d/helm"
+
+  when: (not any_helm_installed) or (not correct_helm_installed)
+  become: yes
+  become_user: root
+
+#- name: Systems Helm repo
+#  kubernetes.core.helm_repository:
+#    name: systems
+#    repo_url: https://nexus.infra.prod.gov.he2pi.com/repository/helm-systems
+#  become: yes
+#  become_user: "{{unpriv_user_id}}"
