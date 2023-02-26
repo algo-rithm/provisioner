@@ -1,0 +1,24 @@
+
+- name: user aliases
+  lineinfile:
+    path: "{{unpriv_user_dir}}/.bashrc"
+    regexp: "{{bashrc_alias_item.regexp}}"
+    line: "{{bashrc_alias_item.line}}"
+    insertafter: "User specific aliases"
+    create: yes
+    state: present
+  loop_control:
+    loop_var: bashrc_alias_item
+  loop:
+  - {regexp: "alias ap=.*ansible.*playbook.*untagged",             line: "alias ap='ansible-playbook --tags untagged $@'"}
+  - {regexp: "alias adgrep=",                                      line: "alias adgrep='egrep -iIr --include=\"*.adoc\" $@'"}
+  - {regexp: "alias ggrep=",                                       line: "alias ggrep='egrep -iIr --include=\"*.groovy\" $@'"}
+  - {regexp: "alias jgrep=",                                       line: "alias jgrep='egrep -iIr --include=\"*.java\" $@'"}
+  - {regexp: "alias ygrep=",                                       line: "alias ygrep='egrep -iIr --include=\"*.yml\" --include=\"*.yaml\" $@'"}
+  - {regexp: "alias pygrep=",                                      line: "alias pygrep='egrep -iIr --include=\"*.py\" $@'"}
+  - {regexp: "alias cm=.*cm",                                      line: "alias cm='cd $HOME/cm'"}
+  - {regexp: "alias dev=.*cm.*devenv",                             line: "alias de='cd $HOME/cm/devenv'"}
+  - {regexp: "alias dlocal=.*cm.*devenv",                          line: "alias dlocal='cd $HOME/cm/devenv/clusters/local'"}
+  - {regexp: "alias p=",                                           line: "alias p='cd $HOME/provisioner'"}
+  become: yes
+  become_user: "{{unpriv_user_id}}"

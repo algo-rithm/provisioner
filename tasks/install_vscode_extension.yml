@@ -1,0 +1,18 @@
+- block:
+
+  - set_fact:
+      regexp: "^{{VSCODE_EXTENSION.id | regex_escape}}$"
+  
+  - shell:
+      cmd: "code --list-extensions | grep -i {{regexp}}"
+    register: vscode_extension_status
+    changed_when: false
+    failed_when: false
+  
+  - name: "Install vsc extension {{VSCODE_EXTENSION.name}}"
+    command:
+      cmd: 'code --install-extension {{VSCODE_EXTENSION.id}}'
+    when: vscode_extension_status.rc != 0
+
+  become: yes
+  become_user: "{{unpriv_user_id}}"

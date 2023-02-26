@@ -1,0 +1,28 @@
+---
+
+- set_fact:
+    shared_role_dir: "{{playbook_dir}}/roles"
+    user_role_dir: "{{playbook_dir}}/user_roles/{{unpriv_user_id}}/roles"
+
+# EXAMPLE
+#  - include_role:
+#      name: "{{shared_role_dir}}/{{a_shared_role}}"
+#    loop_control:
+#      loop_var: a_shared_role
+#    loop: 
+#    - "some-role"
+
+- include_role:
+    name: "{{user_role_dir}}/{{a_user_role}}"
+  loop_control:
+    loop_var: a_user_role
+  loop:
+  - "favorite-packages"
+  - "user-aliases"
+  - "environment-variables"
+  - "terminal-preferences"
+  - "desktop-preferences"
+  - "vim-preferences"
+  - "qgis"
+  - "discord"
+

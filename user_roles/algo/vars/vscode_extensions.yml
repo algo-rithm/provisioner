@@ -1,0 +1,16 @@
+
+#
+# Visual Studio Code extensions.
+#
+
+vscode_extensions:
+- {name: 'Java by Red Hat',                     id: 'redhat.java'}
+#- {name: 'Spring Boot Tools',                   id: 'pivotal.vscode-spring-boot'}
+#- {name: 'Spring Boot Extension Pack',          id: 'pivotal.vscode-boot-dev-pack'}
+- {name: 'YAML by Red Hat',                     id: 'redhat.vscode-yaml'}
+- {name: 'AsciiDoc',                            id: 'asciidoctor.asciidoctor-vscode'}
+# - {name: 'Kubernetes',                          id: 'ms-kubernetes-tools.vscode-kubernetes-tools'}
+# - {name: 'Bridge to Kubernetes',                id: 'mindaro.mindaro'}
+# - {name: 'Database Client',                     id: 'cweijan.vscode-postgresql-client2'}
+# - {name: 'Lombok',                              id: 'gabrielbb.vscode-lombok'}
+

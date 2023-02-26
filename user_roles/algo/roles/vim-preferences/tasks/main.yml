@@ -1,0 +1,16 @@
+- name: vim preferences
+  lineinfile:
+    path: "{{unpriv_user_dir}}/.vimrc"
+    line: "{{vimrc_item}}"
+    create: true
+    mode: "go-rwx"
+    state: present
+  loop_control:
+    loop_var: vimrc_item
+  with_items:
+  - 'set cm=blowfish2'
+  - 'filetype indent off'
+  - 'set belloff=all'
+  - 'set formatoptions-=r formatoptions-=c formatoptions-=o'
+  become: yes
+  become_user: "{{unpriv_user_id}}"

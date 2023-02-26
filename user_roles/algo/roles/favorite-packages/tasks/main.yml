@@ -1,0 +1,13 @@
+- name: Favorite Packages
+  package:
+    state: latest
+    name:
+    - gparted
+    - nmap
+    - socat
+    - iotop
+    - powertop
+    - numatop
+    - iperf
+    - iperf3
+  become: yes

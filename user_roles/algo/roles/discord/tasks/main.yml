@@ -1,0 +1,6 @@
+- name: Discord
+  flatpak:
+    method: user
+    name: com.discordapp.Discord
+  become: yes
+  become_user: "{{unpriv_user_id}}"

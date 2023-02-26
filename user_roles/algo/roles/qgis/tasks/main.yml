@@ -1,0 +1,6 @@
+- name: QGIS
+  flatpak:
+    method: user
+    name: org.qgis.qgis/x86_64/stable
+  become: yes
+  become_user: "{{unpriv_user_id}}"

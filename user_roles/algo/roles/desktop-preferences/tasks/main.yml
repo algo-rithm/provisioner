@@ -1,0 +1,68 @@
+- name: Remove unwanted default user directory creation
+  lineinfile:
+    path: "/etc/xdg/user-dirs.defaults"
+    regexp: "{{unwanted_default_directory_item}}"
+    state: absent
+  loop_control:
+    loop_var: unwanted_default_directory_item
+  loop:
+  - "^TEMPLATES="
+  - "^PUBLICSHARE="
+  - "^MUSIC="
+  - "^VIDEOS="
+  become: yes
+  become_user: root
+
+- name: shell extensions
+  package:
+    state: latest
+    name:
+    - gnome-shell-extension-common
+    - gnome-shell-extension-appindicator
+    - gnome-shell-extension-desktop-icons
+    - gnome-shell-extension-vertical-workspaces
+    - gnome-shell-extension-launch-new-instance
+    - gnome-shell-extension-places-menu
+    - gnome-shell-extension-window-list
+    - gnome-shell-extension-apps-menu
+    - gnome-shell-extension-sound-output-device-chooser
+  become: yes
+  become_user: root
+
+- include_tasks:
+    file: "{{playbook_dir}}/tasks/delete_empty_directory.yml"
+    apply:
+      vars: 
+        EMPTY_DIRECTORY_TO_DELETE: "{{unpriv_user_dir}}/{{unwanted_directory_item}}"
+      become: yes
+      become_user: "{{unpriv_user_id}}"
+  loop_control:
+    loop_var: unwanted_directory_item
+  loop:
+  - "Templates"
+  - "Public"
+  - "Music"
+  - "Videos"
+
+- name: dconf configuration
+  dconf:
+    key: "{{dconf_config_item.key}}"
+    value: "{{dconf_config_item.value | string}}"
+    state: present
+  loop_control:
+    loop_var: dconf_config_item
+  with_dict:
+    "{{dconf_configuration}}"
+  become: yes
+  become_user: "{{unpriv_user_id}}"
+
+- name: Open terminal in home directory instead of Desktop
+  lineinfile:
+    path: /usr/share/gnome-shell/extensions/desktop-icons@gnome-shell-extensions.gcampax.github.com/desktopGrid.js
+    regex: '^(.*let desktopPath = DesktopIconsUtil.getDesktopDir\(\))(\.get_path\(\);.*)$'
+    line: '\1.get_parent()\2'
+    backrefs: yes
+    state: present
+  become: yes
+  become_user: root
+

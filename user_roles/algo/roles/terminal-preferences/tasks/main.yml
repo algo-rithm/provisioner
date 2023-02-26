@@ -1,0 +1,10 @@
+- name: Disable readline bell
+  lineinfile:
+    path: /etc/inputrc
+    regex: 'bell.*style'
+    line: 'set bell-style none'
+    backrefs: no
+    state: present
+    create: yes
+  become: yes
+  become_user: root

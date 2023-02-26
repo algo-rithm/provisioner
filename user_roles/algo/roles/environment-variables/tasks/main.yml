@@ -1,0 +1,19 @@
+
+- name: environment variables
+  lineinfile:
+    path: "{{unpriv_user_dir}}/.bashrc"
+    regexp: "{{bashrc_env_item.regexp}}"
+    line: "{{bashrc_env_item.line}}"
+    insertbefore: "User specific aliases"
+    create: yes
+    state: present
+  loop_control:
+    loop_var: bashrc_env_item
+  loop:
+  - {regexp: "export ARCHIVE",                                        line: "export ARCHIVE='/var/run/media/algo/Archive'"}
+  - {regexp: "export HISTCONTROL",                                    line: "export HISTCONTROL='ignoreboth'"}
+  - {regexp: "export HOSTALIASES",                                    line: "export HOSTALIASES=~/.hosts"}
+  - {regexp: "export DOCKER_SOCK",                                    line: "export DOCKER_SOCK=/run/user/1000/podman/podman.sock"}
+
+  become: yes
+  become_user: "{{unpriv_user_id}}"

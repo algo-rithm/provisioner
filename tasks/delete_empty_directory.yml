@@ -1,0 +1,22 @@
+#
+# If the directory exists and is empty, delete it.
+#
+ 
+- stat:
+    path: "{{EMPTY_DIRECTORY_TO_DELETE}}"
+  register: empty_directory_stat_result
+
+- block:
+
+  - find:
+      file_type: directory
+      paths: "{{EMPTY_DIRECTORY_TO_DELETE}}"
+    register: empty_directory_find_result
+  
+  - file:
+      path: "{{EMPTY_DIRECTORY_TO_DELETE}}"
+      state: absent
+    when: empty_directory_find_result.matched == 0
+
+  when: empty_directory_stat_result.stat.exists
+
