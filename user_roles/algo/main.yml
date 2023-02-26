@@ -9,7 +9,7 @@
 #      name: "{{shared_role_dir}}/{{a_shared_role}}"
 #    loop_control:
 #      loop_var: a_shared_role
-#    loop: 
+#    loop:
 #    - "some-role"
 
 - include_role:
@@ -25,4 +25,3 @@
   - "vim-preferences"
   - "qgis"
   - "discord"
-
