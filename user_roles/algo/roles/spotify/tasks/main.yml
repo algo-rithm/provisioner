@@ -1,0 +1,6 @@
+- name: Spotify
+  flatpak:
+    method: user
+    name: com.spotify.Client
+  become: yes
+  become_user: "{{unpriv_user_id}}"
